@@ -217,3 +217,26 @@ test_datasets = [
 
 # run tests on our given datasets
 run_tests(finetune_dataset, index, test_datasets)
+
+#### EXTRA EXPERIMENT ####
+# To confirm how good/bad our ranking performs, we compared it's performance to a random reranking of the top 100 documents as retreived by BM25
+# The following code allows for random reranking and evaluation of the results. This is not part of the actual experiments, but was used as a baseline
+import random
+
+def shuffle(lst):
+  new_list = list(lst).copy()
+  random.shuffle(new_list)
+  return new_list
+
+dataset, index = "trec-covid", "beir-v1.0.0-trec-covid-flat"
+
+corpus, queries, qrels = load_dataset(dataset)
+pyserini_results_nfcorpus = get_pyeserini(index, queries)
+
+key = list(pyserini_results_nfcorpus.keys())[0]
+print(pyserini_results_nfcorpus[key])
+pylist = dict([(a, dict(zip(pyserini_results_nfcorpus[a].keys(), shuffle(pyserini_results_nfcorpus[a].values())))) for a in pyserini_results_nfcorpus.keys()])
+pylist = dict([(a, dict(zip(pyserini_results_nfcorpus[a].keys(), list(pyserini_results_nfcorpus[a].values())[::-1]))) for a in pyserini_results_nfcorpus.keys()])
+print(pylist[key])
+print(NDCG_allqueries(pylist, qrels))
+print(NDCG_allqueries(pyserini_results_nfcorpus, qrels))
